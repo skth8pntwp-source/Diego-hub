@@ -1,0 +1,207 @@
+-- [[ DIEGO HUB — DAILY KEY SYSTEM ]] --
+
+local LinkvertiseURL = "https://linkvertise.com/access/7922004/X4f79xBXcKhC"
+local KeyServerURL   = "https://skth8pntwp-source.github.io/-/"
+local MainScriptURL  = "https://skth8pntwp-source.github.io/Diego-hub/"
+local KeyFileName    = "DiegoHub_SavedKey.txt"
+
+-- Universal Smart Key Extractor (Reads raw HTML or plain text)
+local function extractKeyFromResponse(rawResponse)
+    if not rawResponse or rawResponse == "" then return "" end
+    
+    -- 1. Matches common key formats (e.g. DIEGO-DAILY-XXXX, DIEGO-KEY-123, etc.)
+    local matchedKey = string.match(rawResponse, "(DIEGO%-[%w%-%_]+)")
+    if matchedKey then return matchedKey end
+    
+    -- 2. Fallback: Strip all HTML tags (<...>) and extract plain text inside
+    local cleanText = string.gsub(rawResponse, "<[^>]+>", " ")
+    cleanText = string.gsub(cleanText, "%s+", " ")
+    cleanText = string.gsub(cleanText, "^%s*(.-)%s*$", "%1")
+    
+    return cleanText
+end
+
+-- HTTP Fetch with Anti-Cache (Forces live load every time)
+local function fetchUrl(url)
+    local cacheBust = (string.find(url, "%?") and "&" or "?") .. "cb=" .. tostring(os.time()) .. "_" .. tostring(math.random(100000, 999999))
+    local fullUrl = url .. cacheBust
+    
+    local req = (syn and syn.request) or (http and http.request) or http_request or request or (fluxus and fluxus.request)
+    if req then
+        local res = req({Url = fullUrl, Method = "GET"})
+        if res and res.Body then
+            return res.Body
+        end
+    end
+    return game:HttpGet(fullUrl, true)
+end
+
+-- Universal Clipboard Copy
+local function copyToClipboard(text)
+    if setclipboard then
+        setclipboard(text)
+    elseif toclipboard then
+        toclipboard(text)
+    elseif syn and syn.write_clipboard then
+        syn.write_clipboard(text)
+    end
+end
+
+-- Execute Main Script
+local function loadHub()
+    loadstring(fetchUrl(MainScriptURL))()
+end
+
+-- Check live key vs saved key
+local checkSuccess, pageBody = pcall(function() return fetchUrl(KeyServerURL) end)
+
+if checkSuccess and pageBody then
+    local liveKey = extractKeyFromResponse(pageBody)
+    
+    if isfile and readfile and isfile(KeyFileName) then
+        local savedKey = readfile(KeyFileName)
+        savedKey = string.gsub(savedKey, "^%s*(.-)%s*$", "%1")
+        
+        -- If today's live key matches saved key, bypass UI instantly
+        if savedKey ~= "" and savedKey == liveKey then
+            print("🌸 Diego Hub: Today's key verified automatically!")
+            loadHub()
+            return
+        end
+    end
+end
+
+-- GUI Setup (Shows up whenever key changes or isn't saved)
+local CoreGui = game:GetService("CoreGui")
+local KeyGui = Instance.new("ScreenGui")
+KeyGui.Name = "DiegoHubKeySystem"
+KeyGui.ResetOnSpawn = false
+
+if gethui then
+    KeyGui.Parent = gethui()
+elseif syn and syn.protect_gui then
+    syn.protect_gui(KeyGui)
+    KeyGui.Parent = CoreGui
+else
+    KeyGui.Parent = CoreGui
+end
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 340, 0, 210)
+MainFrame.Position = UDim2.new(0.5, -170, 0.5, -105)
+MainFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = KeyGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(255, 105, 180)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Text = "🌸 DIEGO HUB — DAILY KEY SYSTEM"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 15
+Title.Font = Enum.Font.SourceSansBold
+Title.Parent = MainFrame
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.05, 0, 0, 38)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Key changes daily! Get today's key below:"
+StatusLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+StatusLabel.TextSize = 13
+StatusLabel.Font = Enum.Font.SourceSans
+StatusLabel.Parent = MainFrame
+
+local KeyBox = Instance.new("TextBox")
+KeyBox.Size = UDim2.new(0.9, 0, 0, 40)
+KeyBox.Position = UDim2.new(0.05, 0, 0, 65)
+KeyBox.BackgroundColor3 = Color3.fromRGB(32, 32, 40)
+KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyBox.PlaceholderText = "Paste today's key here..."
+KeyBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+KeyBox.TextSize = 14
+KeyBox.Font = Enum.Font.SourceSans
+KeyBox.Text = ""
+KeyBox.Parent = MainFrame
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 6)
+BoxCorner.Parent = KeyBox
+
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Size = UDim2.new(0.43, 0, 0, 40)
+GetKeyBtn.Position = UDim2.new(0.05, 0, 0, 120)
+GetKeyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+GetKeyBtn.Text = "📋 Get Key Link"
+GetKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetKeyBtn.TextSize = 13
+GetKeyBtn.Font = Enum.Font.SourceSansBold
+GetKeyBtn.Parent = MainFrame
+
+local GetKeyCorner = Instance.new("UICorner")
+GetKeyCorner.CornerRadius = UDim.new(0, 6)
+GetKeyCorner.Parent = GetKeyBtn
+
+local SubmitBtn = Instance.new("TextButton")
+SubmitBtn.Size = UDim2.new(0.43, 0, 0, 40)
+SubmitBtn.Position = UDim2.new(0.52, 0, 0, 120)
+SubmitBtn.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+SubmitBtn.Text = "🚀 Verify Key"
+SubmitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitBtn.TextSize = 13
+SubmitBtn.Font = Enum.Font.SourceSansBold
+SubmitBtn.Parent = MainFrame
+
+local SubmitCorner = Instance.new("UICorner")
+SubmitCorner.CornerRadius = UDim.new(0, 6)
+SubmitCorner.Parent = SubmitBtn
+
+GetKeyBtn.MouseButton1Click:Connect(function()
+    copyToClipboard(LinkvertiseURL)
+    GetKeyBtn.Text = "✅ Link Copied!"
+    task.wait(2)
+    GetKeyBtn.Text = "📋 Get Key Link"
+end)
+
+SubmitBtn.MouseButton1Click:Connect(function()
+    StatusLabel.Text = "Fetching live key..."
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    
+    local ok, liveData = pcall(function() return fetchUrl(KeyServerURL) end)
+    
+    if ok and liveData then
+        local currentServerKey = extractKeyFromResponse(liveData)
+        local userKey = string.gsub(KeyBox.Text, "^%s*(.-)%s*$", "%1")
+        
+        if userKey ~= "" and userKey == currentServerKey then
+            StatusLabel.Text = "✅ Key Accepted! Saving..."
+            StatusLabel.TextColor3 = Color3.fromRGB(80, 255, 120)
+            
+            if writefile then
+                pcall(function() writefile(KeyFileName, userKey) end)
+            end
+            
+            task.wait(1)
+            KeyGui:Destroy()
+            loadHub()
+        else
+            StatusLabel.Text = "❌ Incorrect key for today!"
+            StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+        end
+    else
+        StatusLabel.Text = "❌ Could not reach key server!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    end
+end)
